@@ -1,7 +1,7 @@
    Essa é a estrutura na qual vamos realizar as funções pedidas pela professora.
   
    Trata-se de uma árvore B+, na qual inicialmente é montada em memória principal, mas posteriormente tem seus nós associados cada um a um arquivo binário. Cada arquivo tem por padrão a nomenclatura no formato arq001.bin, o número é dado pelo
-  id_no que foi associado na criação de cada nó na memória principal. Seu grau, apesar de estar definido na main como t = 2, pode ser mudado e continuará funcionando normalmente.
+  id_no que foi associado na criação de cada nó na memória principal(estrutura do arquivo está descrito nos .txt). O grau da árvore, apesar de estar definido na main como t = 2, pode ser mudado e continuará funcionando normalmente.
 
    Foram implementadas funções de impressão e busca, tanto em mp como em ms, possibilitando a realização de boa parte dos exercícios propostos. No entanto, vcs verão que há um arquivo hash_tables.c, no qual tentei implementar uma estrutura de hash
   para guardar o id de cada jogador em uma tabela de seleções e em uma tabela de posições, tais tabelas ajudariam otimizariam a busca dentro da árvore, porém no fim ocorreu algum bug que não sei ao certo qual é, convido-os a arrumá-lo, ou

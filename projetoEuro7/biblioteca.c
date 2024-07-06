@@ -1,25 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hash_tables.c"
 #define MAX 290
 
 
-typedef struct jogador{
-    int id, num, C, idade, jogos, gols;
+typedef struct jogador{//estrutura do jogador
+    int id, num, C, idade, jogos, gols;//num: número da camisa, C: capitão ou não
     char nome[50], pos[3], nascimento[25], time_pais[25], time[25], selecao[25];
 }TJ;
 
 
-typedef struct arvbm{
-  int nchaves, folha, *chave;
+typedef struct arvbm{//estrutura dos nós
+  int nchaves, folha, *chave, id_no;//
   struct arvbm **filho, *prox;
   TJ ** jogadores;
-  FILE * doc;  
 }TARVBM;
 
 
-TARVBM * TARVBM_cria(int t){
+TARVBM * TARVBM_cria(int t, int * id_no){//criação de nó
     TARVBM*novo = (TARVBM*)malloc(sizeof(TARVBM));
+    novo->id_no = *id_no;
+    (*id_no)++;
     novo->nchaves = 0;
     novo->jogadores = (TJ**)malloc(sizeof(TJ*)*((t*2)-1));
     novo->folha = 1;
@@ -28,7 +30,6 @@ TARVBM * TARVBM_cria(int t){
     novo->prox = NULL;
     int i;
     for(i=0; i<(t*2); i++) novo->filho[i] = NULL;
-    novo->doc = NULL;
     return novo;
 }
 
@@ -37,6 +38,10 @@ TARVBM *TARVBM_inicializa(void){
   return NULL;
 }
 
+
+int tam_jogador(){//tamanho das informações dos jogadores no arquivo binário
+  return 6*sizeof(int) + 121*sizeof(char);
+}
 
 void TARVBM_libera(TARVBM *a){
   if(a){
@@ -52,7 +57,7 @@ void TARVBM_libera(TARVBM *a){
 }
 
 
-TARVBM *TARVBM_busca(TARVBM *a, int id_j){
+TARVBM *TARVBM_busca(TARVBM *a, int id_j){//busca de nó em mp
   if (!a) return NULL;
   int i = 0;
   while ((i < a->nchaves) && (id_j > a->chave[i])) i++;
@@ -62,8 +67,8 @@ TARVBM *TARVBM_busca(TARVBM *a, int id_j){
   return TARVBM_busca(a->filho[i], id_j);
 }
 
-TARVBM *divisao(TARVBM *x, int i, TARVBM* y, int t){
-  TARVBM *z = TARVBM_cria(t);
+TARVBM *divisao(TARVBM *x, int i, TARVBM* y, int t, int * id_no){
+  TARVBM *z = TARVBM_cria(t, id_no);
   z->folha = y->folha;
   int j;
   if(!y->folha){
@@ -93,7 +98,7 @@ TARVBM *divisao(TARVBM *x, int i, TARVBM* y, int t){
 }
 
 
-TARVBM *insere_nao_completo(TARVBM *x, TJ * player, int t){
+TARVBM *insere_nao_completo(TARVBM *x, TJ * player, int t, int*id_no){
   int i = x->nchaves-1;
   if(x->folha){
     while((i>=0) && (player->id < x->chave[i])){
@@ -109,43 +114,43 @@ TARVBM *insere_nao_completo(TARVBM *x, TJ * player, int t){
   while((i>=0) && (player->id < x->chave[i])) i--;
   i++;
   if(x->filho[i]->nchaves == ((2*t)-1)){
-    x = divisao(x, (i+1), x->filho[i], t);
+    x = divisao(x, (i+1), x->filho[i], t, id_no);
     if(player->id > x->chave[i]) i++;
   }
-  x->filho[i] = insere_nao_completo(x->filho[i], player, t);
+  x->filho[i] = insere_nao_completo(x->filho[i], player, t, id_no);
   return x;
 }
 
-TARVBM *TARVBM_insere(TARVBM *T, TJ * player, int t){
+TARVBM *TARVBM_insere(TARVBM *T, TJ * player, int t, int * id_no){//inserção em mp
   if(TARVBM_busca(T, player->id)) return T;
   if(!T){
-    T=TARVBM_cria(t);
+    T=TARVBM_cria(t, id_no);
     T->chave[0] = player->id;
     T->nchaves=1;
     T->jogadores[0] = player;
     return T;
   }
   if(T->nchaves == (2*t)-1){
-    TARVBM *S = TARVBM_cria(t);
+    TARVBM *S = TARVBM_cria(t, id_no);
     S->nchaves=0;
     S->folha = 0;
     S->filho[0] = T;
-    S = divisao(S,1,T,t);
-    S = insere_nao_completo(S, player, t);
+    S = divisao(S,1,T,t, id_no);
+    S = insere_nao_completo(S, player, t, id_no);
     return S;
   }
-  T = insere_nao_completo(T, player, t);
+  T = insere_nao_completo(T, player, t, id_no);
   return T;
 }
 
 
-void imp_rec(TARVBM *a, int andar){
+void imp_rec(TARVBM *a, int andar){//impressão em mp
   if(a){
     int i,j;
     for(i=0; i<=a->nchaves-1; i++){
       imp_rec(a->filho[i],andar+1);
       for(j=0; j<=andar; j++) printf("\t");
-      printf("%d\n", (a->chave[i]));
+      printf("%d(%d)\n", (a->chave[i]), (a->id_no));
     }
     imp_rec(a->filho[i],andar+1);
   }
@@ -156,7 +161,7 @@ void TARVBM_Imprime(TARVBM *a){
 }
 
 
-TJ **rec_jogadores(int * num_j){
+TJ **rec_jogadores(int * num_j){//leitura do arquivo de entrada
   FILE *entrada = fopen("EURO.txt", "r");
   if(!entrada)exit(1);
   TJ ** jogadores = (TJ**)malloc(sizeof(TJ*)*MAX);
@@ -191,41 +196,51 @@ TJ **rec_jogadores(int * num_j){
 }
 
 
-void associa(TARVBM * a){
-  if(!a->folha) return associa(a->filho[0]);
-  int i = 1;
-  TARVBM * ptr = a;
-  while(ptr){
-    char name[20];
-    sprintf(name, "arquivo_%d.bin", i);
-    FILE * arq = fopen(name, "ab");
-    for(int j = 0; j<ptr->nchaves; j++){
-      TJ * jogador = ptr->jogadores[j];
-      char player[250];
-      if(!jogador->C){
-      sprintf(player, "%d/%d/%-2s/%-49s/%-20s/%-24s(aged %d)/%d/%d/%-20s/%-29s\n", jogador->id, jogador->num,
-            jogador->pos, jogador->nome, jogador->selecao, jogador->nascimento, jogador->idade, jogador->jogos,
-            jogador->gols, jogador->time_pais, jogador->time);
-      }
-      else{sprintf(player,"%d/%d/%-2s/%-49s (captain)/%-20s/%-24s(aged %d)/%d/%d/%-19s/%-29s\n", jogador->id, jogador->num,
-       jogador->pos, jogador->nome, jogador->selecao, jogador->nascimento, jogador->idade, jogador->jogos,
-       jogador->gols, jogador->time_pais, jogador->time);
-       }
-       fprintf(arq, "%s", player);
-    }//OBS: a impressão no arquivo possui as informações corretas, porém estão com uma diagramação ruim
-    a->doc = arq;
-    fclose(arq);
-    ptr = ptr->prox;
-    i++;
-  }
-}
-
-TJ * buscajogador(TARVBM *a, int id){
+TJ * buscajogador(TARVBM *a, int id){//busca de jogador em mp
   TARVBM * no = TARVBM_busca(a, id);
   if(!no) return NULL;
   for(int i = 0; i < no->nchaves; i++){
     if(no->jogadores[i]->id == id) return no->jogadores[i];
   }
+}
+
+
+void associa(TARVBM*a){//associação de cada nó a um documento binário
+  if(!a->folha){
+    for(int i = 0; i <= a->nchaves; i++) associa(a->filho[i]);
+  }
+  char nome_arquivo[11];
+  sprintf(nome_arquivo, "arq%03d.bin", a->id_no);
+  FILE * fp = fopen(nome_arquivo, "wb");
+  fwrite(&a->id_no, sizeof(int), 1, fp);
+  fwrite(&a->folha, sizeof(int), 1, fp);
+  fwrite(&a->nchaves, sizeof(int), 1, fp);
+  for(int j = 0; j < a->nchaves; j++){
+    if(a->folha){
+      fwrite(&a->jogadores[j]->id, sizeof(int), 1, fp);
+      fwrite(&a->jogadores[j]->num, sizeof(int), 1, fp);
+      fwrite(a->jogadores[j]->pos, sizeof(char), 3, fp);
+      fwrite(a->jogadores[j]->nome, sizeof(char), 20, fp);
+      fwrite(&a->jogadores[j]->C, sizeof(int), 1, fp);
+      fwrite(a->jogadores[j]->selecao, sizeof(char), 20, fp);
+      fwrite(&a->jogadores[j]->nascimento, sizeof(char), 24, fp);
+      fwrite(&a->jogadores[j]->idade, sizeof(int), 1, fp);
+      fwrite(&a->jogadores[j]->jogos, sizeof(int), 1, fp);
+      fwrite(&a->jogadores[j]->gols, sizeof(int), 1, fp);
+      fwrite(a->jogadores[j]->time_pais, sizeof(char), 25, fp);
+      fwrite(a->jogadores[j]->time, sizeof(char), 29, fp);
+    }
+    else fwrite(&a->chave[j], sizeof(int), 1, fp);
+  }
+  if(a->prox) fwrite(&a->prox->id_no, sizeof(int), 1, fp);
+  else {
+    int n = 0;
+    fwrite(&n, sizeof(int), 1, fp);
+  }
+  if(!a->folha){
+    for(int k = 0; k<=a->nchaves; k++) fwrite(&a->filho[k]->id_no, sizeof(int), 1, fp);
+  }
+  fclose(fp);
 }
 
 
@@ -244,3 +259,181 @@ void imprimejogador(TJ * jogador){
     }
 }
 
+
+
+void imprime_arq(int id_no){//impressão de um arquivo/nó
+  char nome_arq[11];
+  sprintf(nome_arq, "arq%03d.bin", id_no);
+  FILE*fp = fopen(nome_arq, "rb");
+  int n;
+  fread(&n, sizeof(int), 1, fp);
+  printf("\nID NÓ: %d\n", n);
+  fread(&n, sizeof(int), 1, fp);
+  printf("FOLHA: %d\n", n);
+  int f = n;
+  fread(&n, sizeof(int), 1, fp);
+  printf("N° DE CHAVES: %d\n", n);
+  int lim = n;
+  for(int i = 0; i < lim; i++){
+    if(!f){
+      fread(&n, sizeof(int), 1, fp);
+      printf("CHAVE[%d]: %d\n", i, n);
+      }
+    else{
+        TJ *player = (TJ*) malloc(sizeof(TJ));
+        fread(&player->id, sizeof(int), 1, fp);
+        fread(&player->num, sizeof(int), 1, fp);
+        fread(player->pos, sizeof(char), 3, fp);
+        fread(player->nome, sizeof(char), 20, fp);
+        fread(&player->C, sizeof(int), 1, fp);
+        fread(player->selecao, sizeof(char), 20, fp);
+        fread(player->nascimento, sizeof(char), 24, fp);
+        fread(&player->idade, sizeof(int), 1, fp);
+        fread(&player->jogos, sizeof(int), 1, fp);
+        fread(&player->gols, sizeof(int), 1, fp);
+        fread(player->time_pais, sizeof(char), 25, fp);
+        fread(player->time, sizeof(char), 29, fp);
+        imprimejogador(player);
+        free(player);
+    }
+  }
+  fread(&n, sizeof(int), 1, fp);
+  printf("PROX: %d\n", n);
+  if(!f){
+    for(int j = 0; j <= lim; j++){
+      fread(&n, sizeof(int), 1, fp);
+      printf("FILHO[%d]: %d\n", j, n);
+    }
+  }
+  printf("---------------\n");
+  fclose(fp);
+}
+
+
+
+TJ * buscajogadorMS(int id_no, int id_player){//busca de jogador em ms
+  char nome_arquivo[11];
+  sprintf(nome_arquivo ,"arq%03d.bin", id_no);
+  FILE * fp = fopen(nome_arquivo, "rb");
+  if(!fp)exit(1);
+  fseek(fp, sizeof(int), SEEK_SET);
+  int folha, nchaves;
+  fread(&folha, sizeof(int), 1, fp);
+  fread(&nchaves, sizeof(int), 1, fp);
+  int n, p = nchaves;
+  for(int i = 0; i<nchaves; i++){
+    fread(&n, sizeof(int), 1, fp);
+    if(folha){
+      if(n == id_player){
+        TJ *player = (TJ*) malloc(sizeof(TJ));
+        player->id = n;
+        fread(&player->num, sizeof(int), 1, fp);
+        fread(player->pos, sizeof(char), 3, fp);
+        fread(player->nome, sizeof(char), 20, fp);
+        fread(&player->C, sizeof(int), 1, fp);
+        fread(player->selecao, sizeof(char), 20, fp);
+        fread(player->nascimento, sizeof(char), 24, fp);
+        fread(&player->idade, sizeof(int), 1, fp);
+        fread(&player->jogos, sizeof(int), 1, fp);
+        fread(&player->gols, sizeof(int), 1, fp);
+        fread(player->time_pais, sizeof(char), 25, fp);
+        fread(player->time, sizeof(char), 29, fp);
+        fclose(fp);
+        return player;
+      }
+      else if(n > id_player){
+        fclose(fp);
+        return NULL;
+      }
+      else{
+        fseek(fp, tam_jogador()-sizeof(int), SEEK_CUR);
+      }
+    }
+    else{
+      if(n > id_player){ 
+        p = i;
+        break;
+      }
+    }
+  }
+  if(folha){
+    int prox;
+    fread(&prox, sizeof(int), 1, fp);
+    fclose(fp);
+    return buscajogadorMS(prox, id_player);
+  }
+  fseek(fp, sizeof(int)*(1 + p), SEEK_CUR);
+  int filho;
+  fread(&filho, sizeof(int), 1, fp);
+  fclose(fp);
+  return buscajogadorMS(filho, id_player);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*ABAIXO, UMA TENTATIVA FRUSTADA DE IMPLEMENTAR 3 TABELAS, SENDO DUAS DELAS EM HASH*/
+
+
+
+
+
+
+void add_pos(int id_j, char*pos){//tabela hash que salva o id do jogador na sua respectiva posição
+  HashPOSTable * hash = loadHashPOSTable("tabelapos.bin");
+  insertPlayerPOS(hash, id_j, pos);
+  saveHashPOSTable(hash, "tabelapos.bin");
+}
+
+void add_C(int id_j, int C){//tabela que só guarda id's dos capitães(essa deu certo)
+  if(!C)return;
+  FILE * fp = fopen("tabelacap.bin", "ab");
+  fwrite(&id_j, sizeof(int), 1, fp);
+  fclose(fp);
+}
+
+void add_sel(int id_j, char*sel){//tabela hash que guarda os id's dos jogadores em suas respectivas seleções
+  HashCountryTable * hash = loadHashSelTable("tabelasel.bin");
+  insertPlayerSel(hash, id_j, sel);
+  saveHashSelTable(hash, "tabelasel.bin");
+}
+
+
+
+
+
+void organizar_tabelas(int id_no){//função que passa por todos os jogadores e coloca seus id's na tabela, não deu certo devido aos problemas na hash
+  char nome_arquivo[11];
+  sprintf(nome_arquivo ,"arq%03d.bin", id_no);
+  FILE * fp = fopen(nome_arquivo, "rb");
+  if(!fp)exit(1);
+  fseek(fp, sizeof(int), SEEK_SET);
+  int folha, nchaves;
+  fread(&folha, sizeof(int), 1, fp);
+  fread(&nchaves, sizeof(int), 1, fp);
+  if(!folha){
+    fseek(fp, sizeof(int)*(nchaves+1), SEEK_CUR);
+    int filho;
+    fread(&filho, sizeof(int), 1, fp);
+    fclose(fp);
+    organizar_tabelas(filho);
+  }
+  for(int i = 0; i < nchaves; i++){
+    int id_j, C;
+    char pos[3], selecao[20];
+    fread(&id_j, sizeof(int), 1, fp);
+    fseek(fp, sizeof(int), SEEK_CUR);
+    fread(pos, sizeof(char), 3, fp);
+    add_pos(id_j, pos);
+    fseek(fp, sizeof(char)* 20, SEEK_CUR);
+    fread(&C, sizeof(int), 1, fp);
+    add_C(id_j, C);
+    fread(selecao, sizeof(char), 20, fp);
+    add_sel(id_j, selecao);
+    fseek(fp, sizeof(int)*3 + sizeof(char)*78, SEEK_CUR);
+  }
+  int prox;
+  fread(&prox, sizeof(int), 1, fp);
+  fclose(fp);
+  if(!prox) return;
+  return organizar_tabelas(prox);  
+}

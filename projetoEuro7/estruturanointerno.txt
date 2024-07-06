@@ -1,0 +1,23 @@
+id_no
+folha
+nchaves
+chave[0]
+chave[1]
+chave[2]
+.
+.
+.
+.
+.
+.
+chave[nchaves-1]
+prox(id do proximo nó, em caso de nó inter é 0)
+filho[0](id do filho)
+filho[1]
+filho[2]
+.
+.
+.
+.
+.
+filho[nchaves]

@@ -1,0 +1,14 @@
+id_no
+folha
+nchaves(=n° de jogadores)
+id num pos nome C selecao nascimento idade jogos gols time time_pais
+id num pos nome C selecao nascimento idade jogos gols time time_pais
+id num pos nome C selecao nascimento idade jogos gols time time_pais
+.
+.
+.
+.
+.
+.
+id num pos nome C selecao nascimento idade jogos gols time time_pais
+prox(id do proximo nó, caso seja o último prox = 0)

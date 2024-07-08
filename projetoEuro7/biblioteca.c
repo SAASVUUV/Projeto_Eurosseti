@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "hash_tables.c"
 #define MAX 290
 
 
@@ -198,6 +197,7 @@ TJ **rec_jogadores(int * num_j){//leitura do arquivo de entrada
 
 TJ * buscajogador(TARVBM *a, int id){//busca de jogador em mp
   TARVBM * no = TARVBM_busca(a, id);
+  printf("%d", no->id_no);
   if(!no) return NULL;
   for(int i = 0; i < no->nchaves; i++){
     if(no->jogadores[i]->id == id) return no->jogadores[i];
@@ -282,6 +282,7 @@ void imprime_arq(int id_no){//impressão de um arquivo/nó
     else{
         TJ *player = (TJ*) malloc(sizeof(TJ));
         fread(&player->id, sizeof(int), 1, fp);
+        printf("\n%d\n", player->id);
         fread(&player->num, sizeof(int), 1, fp);
         fread(player->pos, sizeof(char), 3, fp);
         fread(player->nome, sizeof(char), 20, fp);
@@ -362,9 +363,10 @@ TJ * buscajogadorMS(int id_no, int id_player){//busca de jogador em ms
     fclose(fp);
     return buscajogadorMS(prox, id_player);
   }
-  fseek(fp, sizeof(int)*(1 + p), SEEK_CUR);
+  fseek(fp, sizeof(int)*(nchaves), SEEK_CUR);
   int filho;
   fread(&filho, sizeof(int), 1, fp);
+  printf("%d", filho);
   fclose(fp);
   return buscajogadorMS(filho, id_player);
 }
@@ -378,11 +380,11 @@ TJ * buscajogadorMS(int id_no, int id_player){//busca de jogador em ms
 
 
 
-void add_pos(int id_j, char*pos){//tabela hash que salva o id do jogador na sua respectiva posição
-  HashPOSTable * hash = loadHashPOSTable("tabelapos.bin");
-  insertPlayerPOS(hash, id_j, pos);
-  saveHashPOSTable(hash, "tabelapos.bin");
-}
+// void add_pos(int id_j, char*pos){//tabela hash que salva o id do jogador na sua respectiva posição
+//   HashPOSTable * hash = loadHashPOSTable("tabelapos.bin");
+//   insertPlayerPOS(hash, id_j, pos);
+//   saveHashPOSTable(hash, "tabelapos.bin");
+// }
 
 void add_C(int id_j, int C){//tabela que só guarda id's dos capitães(essa deu certo)
   if(!C)return;
@@ -391,11 +393,11 @@ void add_C(int id_j, int C){//tabela que só guarda id's dos capitães(essa deu 
   fclose(fp);
 }
 
-void add_sel(int id_j, char*sel){//tabela hash que guarda os id's dos jogadores em suas respectivas seleções
-  HashCountryTable * hash = loadHashSelTable("tabelasel.bin");
-  insertPlayerSel(hash, id_j, sel);
-  saveHashSelTable(hash, "tabelasel.bin");
-}
+// void add_sel(int id_j, char*sel){//tabela hash que guarda os id's dos jogadores em suas respectivas seleções
+//   HashCountryTable * hash = loadHashSelTable("tabelasel.bin");
+//   insertPlayerSel(hash, id_j, sel);
+//   saveHashSelTable(hash, "tabelasel.bin");
+// }
 
 
 

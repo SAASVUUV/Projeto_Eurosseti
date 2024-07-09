@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #define MAX 290
 
 
@@ -39,7 +40,7 @@ TARVBM *TARVBM_inicializa(void){
 
 
 int tam_jogador(){//tamanho das informações dos jogadores no arquivo binário
-  return 6*sizeof(int) + 121*sizeof(char);
+  return 6*sizeof(int) + 126*sizeof(char);
 }
 
 void TARVBM_libera(TARVBM *a){
@@ -164,7 +165,7 @@ TJ **rec_jogadores(int * num_j){//leitura do arquivo de entrada
   FILE *entrada = fopen("EURO.txt", "r");
   if(!entrada)exit(1);
   TJ ** jogadores = (TJ**)malloc(sizeof(TJ*)*MAX);
-  char pais[20];
+  char pais[25];
   int counter = 0, r;
   while(fgets(pais, sizeof(pais), entrada)){
     while(1){
@@ -222,7 +223,7 @@ void associa(TARVBM*a){//associação de cada nó a um documento binário
       fwrite(a->jogadores[j]->pos, sizeof(char), 3, fp);
       fwrite(a->jogadores[j]->nome, sizeof(char), 20, fp);
       fwrite(&a->jogadores[j]->C, sizeof(int), 1, fp);
-      fwrite(a->jogadores[j]->selecao, sizeof(char), 20, fp);
+      fwrite(a->jogadores[j]->selecao, sizeof(char), 25, fp);
       fwrite(&a->jogadores[j]->nascimento, sizeof(char), 24, fp);
       fwrite(&a->jogadores[j]->idade, sizeof(int), 1, fp);
       fwrite(&a->jogadores[j]->jogos, sizeof(int), 1, fp);
@@ -287,7 +288,7 @@ void imprime_arq(int id_no){//impressão de um arquivo/nó
         fread(player->pos, sizeof(char), 3, fp);
         fread(player->nome, sizeof(char), 20, fp);
         fread(&player->C, sizeof(int), 1, fp);
-        fread(player->selecao, sizeof(char), 20, fp);
+        fread(player->selecao, sizeof(char), 25, fp);
         fread(player->nascimento, sizeof(char), 24, fp);
         fread(&player->idade, sizeof(int), 1, fp);
         fread(&player->jogos, sizeof(int), 1, fp);
@@ -311,6 +312,23 @@ void imprime_arq(int id_no){//impressão de um arquivo/nó
 }
 
 
+TJ * le_jogador(FILE * fp){
+  TJ *player = (TJ*) malloc(sizeof(TJ));
+  fread(&player->id, sizeof(int), 1, fp);
+  fread(&player->num, sizeof(int), 1, fp);
+  fread(player->pos, sizeof(char), 3, fp);
+  fread(player->nome, sizeof(char), 20, fp);
+  fread(&player->C, sizeof(int), 1, fp);
+  fread(player->selecao, sizeof(char), 25, fp);
+  fread(player->nascimento, sizeof(char), 24, fp);
+  fread(&player->idade, sizeof(int), 1, fp);
+  fread(&player->jogos, sizeof(int), 1, fp);
+  fread(&player->gols, sizeof(int), 1, fp);
+  fread(player->time_pais, sizeof(char), 25, fp);
+  fread(player->time, sizeof(char), 29, fp);
+  return player;
+}
+
 
 TJ * buscajogadorMS(int id_no, int id_player){//busca de jogador em ms
   char nome_arquivo[11];
@@ -332,7 +350,7 @@ TJ * buscajogadorMS(int id_no, int id_player){//busca de jogador em ms
         fread(player->pos, sizeof(char), 3, fp);
         fread(player->nome, sizeof(char), 20, fp);
         fread(&player->C, sizeof(int), 1, fp);
-        fread(player->selecao, sizeof(char), 20, fp);
+        fread(player->selecao, sizeof(char), 25, fp);
         fread(player->nascimento, sizeof(char), 24, fp);
         fread(&player->idade, sizeof(int), 1, fp);
         fread(&player->jogos, sizeof(int), 1, fp);
@@ -366,76 +384,8 @@ TJ * buscajogadorMS(int id_no, int id_player){//busca de jogador em ms
   fseek(fp, sizeof(int)*(nchaves), SEEK_CUR);
   int filho;
   fread(&filho, sizeof(int), 1, fp);
-  printf("%d", filho);
   fclose(fp);
   return buscajogadorMS(filho, id_player);
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*ABAIXO, UMA TENTATIVA FRUSTADA DE IMPLEMENTAR 3 TABELAS, SENDO DUAS DELAS EM HASH*/
-
-
-
-
-
-
-// void add_pos(int id_j, char*pos){//tabela hash que salva o id do jogador na sua respectiva posição
-//   HashPOSTable * hash = loadHashPOSTable("tabelapos.bin");
-//   insertPlayerPOS(hash, id_j, pos);
-//   saveHashPOSTable(hash, "tabelapos.bin");
-// }
-
-void add_C(int id_j, int C){//tabela que só guarda id's dos capitães(essa deu certo)
-  if(!C)return;
-  FILE * fp = fopen("tabelacap.bin", "ab");
-  fwrite(&id_j, sizeof(int), 1, fp);
-  fclose(fp);
-}
-
-// void add_sel(int id_j, char*sel){//tabela hash que guarda os id's dos jogadores em suas respectivas seleções
-//   HashCountryTable * hash = loadHashSelTable("tabelasel.bin");
-//   insertPlayerSel(hash, id_j, sel);
-//   saveHashSelTable(hash, "tabelasel.bin");
-// }
-
-
-
-
-
-void organizar_tabelas(int id_no){//função que passa por todos os jogadores e coloca seus id's na tabela, não deu certo devido aos problemas na hash
-  char nome_arquivo[11];
-  sprintf(nome_arquivo ,"arq%03d.bin", id_no);
-  FILE * fp = fopen(nome_arquivo, "rb");
-  if(!fp)exit(1);
-  fseek(fp, sizeof(int), SEEK_SET);
-  int folha, nchaves;
-  fread(&folha, sizeof(int), 1, fp);
-  fread(&nchaves, sizeof(int), 1, fp);
-  if(!folha){
-    fseek(fp, sizeof(int)*(nchaves+1), SEEK_CUR);
-    int filho;
-    fread(&filho, sizeof(int), 1, fp);
-    fclose(fp);
-    organizar_tabelas(filho);
-  }
-  for(int i = 0; i < nchaves; i++){
-    int id_j, C;
-    char pos[3], selecao[20];
-    fread(&id_j, sizeof(int), 1, fp);
-    fseek(fp, sizeof(int), SEEK_CUR);
-    fread(pos, sizeof(char), 3, fp);
-    add_pos(id_j, pos);
-    fseek(fp, sizeof(char)* 20, SEEK_CUR);
-    fread(&C, sizeof(int), 1, fp);
-    add_C(id_j, C);
-    fread(selecao, sizeof(char), 20, fp);
-    add_sel(id_j, selecao);
-    fseek(fp, sizeof(int)*3 + sizeof(char)*78, SEEK_CUR);
-  }
-  int prox;
-  fread(&prox, sizeof(int), 1, fp);
-  fclose(fp);
-  if(!prox) return;
-  return organizar_tabelas(prox);  
-}
